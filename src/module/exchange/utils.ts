@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import * as crypto from "crypto";
 import { SystemMath } from "../../utils/system_math";
+import { logger } from "../../sys_lib/logger";
 
 interface ILocalOrderInfo {
   marketType: string;
@@ -45,8 +46,14 @@ function createOrderId(
 }
 
 function parseOrderId(orderStr: string): ILocalOrderInfo {
-  // S_2vbo80_msdg_l70h9
-  // orderStr = "S_2vbo80_msdg_l70h9"
+  if (typeof orderStr !== "string") {
+    return {
+      marketType: "",
+      orderIndex: 0,
+      price: 0,
+    };
+  }
+  logger.debug("orderId Is ", orderStr);
   const orderInfoList = orderStr.split("_");
   const index = Number(
     new BigNumber(orderInfoList[1], encodeSize).toString(10)

@@ -6,7 +6,7 @@ import { LpWalletManager } from "../module/bridge_extend/lp_wallet_manager";
 import { SymbolManager } from "../module/bridge_extend/symbol_manager";
 
 interface IBridgeTokenConfigItem {
-  bridge_name: string; // tokenBridge的name
+  bridge_name: string; // tokenBridge name
   src_chain_id: number;
   dst_chain_id: number;
   srcToken: string;
@@ -14,10 +14,10 @@ interface IBridgeTokenConfigItem {
   msmq_name: string;
   std_symbol: string;
   wallet: {
-    name: string; // 目标链使用的钱包地址
-    balance: { [key: string]: number }; // 目标链钱包的余额
+    name: string; // Wallet address used by the target chain
+    balance: { [key: string]: number }; // Balance of the target chain wallet
   };
-  dst_chain_client_uri: string; // 目标链客户端的链接地址
+  dst_chain_client_uri: string; // Link address of the target chain client
   fee_manager: FeeManager;
   status_manager: StatusManager;
   lp_wallet_info: LpWalletManager;
@@ -40,7 +40,7 @@ interface IHedgeConfig {
 }
 
 interface ILPConfig {
-  lp_id_fake: string; // lp 的id
+  lp_id_fake: string; // lp  id
 }
 
 interface ILPConfigCacheItem {
@@ -67,12 +67,12 @@ interface ILPConfigCache {
 }
 
 enum ILpCmd {
-  "EVENT_ASK_REPLY" = "EVENT_ASK_REPLY", // 询价的回答
-  "CMD_UPDATE_QUOTE" = "CMD_UPDATE_QUOTE", // 报价Cmd
-  "CALLBACK_LOCK_QUOTE" = "CALLBACK_LOCK_QUOTE", // 允许锁定报价Cmd
-  "CMD_TRANSFER_IN" = "CMD_TRANSFER_IN", // B链 转入 合约Cmd
-  "CMD_TRANSFER_IN_CONFIRM" = "CMD_TRANSFER_IN_CONFIRM", // B链发钱给用户Cmd
-  "CMD_TRANSFER_IN_REFUND" = "CMD_TRANSFER_IN_REFUND", // B链取消Tx In Cmd
+  "EVENT_ASK_REPLY" = "EVENT_ASK_REPLY",
+  "CMD_UPDATE_QUOTE" = "CMD_UPDATE_QUOTE",
+  "CALLBACK_LOCK_QUOTE" = "CALLBACK_LOCK_QUOTE",
+  "CMD_TRANSFER_IN" = "CMD_TRANSFER_IN",
+  "CMD_TRANSFER_IN_CONFIRM" = "CMD_TRANSFER_IN_CONFIRM",
+  "CMD_TRANSFER_IN_REFUND" = "CMD_TRANSFER_IN_REFUND",
 }
 
 interface ICexCoinConfig {
@@ -81,7 +81,7 @@ interface ICexCoinConfig {
   coinType: string;
   addressLower: string;
   symbol: string;
-  precision: number; // 币在Dex上的精度
+  precision: number;
 }
 
 interface IMarketOrderbookRet {
@@ -90,8 +90,8 @@ interface IMarketOrderbookRet {
 }
 
 enum IHedgeType {
-  Null = "Null", // 不进行对冲
-  CoinSpotHedge = "CoinSpotHedge", // 币本金 现货对冲
+  Null = "Null", // No hedging
+  CoinSpotHedge = "CoinSpotHedge", // Currency principal, spot hedging
 }
 
 interface IHedgeClass {
@@ -106,19 +106,19 @@ interface IHedgeClass {
     srcPrice: number,
     dstPrice: number,
     gasTokenPrice: number
-  ): Promise<number>; // 输入多少的左侧量，才能保证基本的对冲量限制
+  ): Promise<number>;
 
   checkSwapAmount(ammContext: AmmContext): Promise<boolean>;
 
   getHedgeAccountState(): Promise<number>;
 
-  getSwapMax(ammContext: AmmContext): Promise<BigNumber>; // 返回可以swap的最大量
+  getSwapMax(ammContext: AmmContext): Promise<BigNumber>;
 
-  checkHedgeCond(ammContext: AmmContext); // 检查是否可以完成对冲
+  checkHedgeCond(ammContext: AmmContext);
 
-  hedge(info: ISpotHedgeInfo); // 设置对冲信息
+  hedge(info: ISpotHedgeInfo);
 
-  lockHedgeBalance(ammContext: AmmContext, accountId: string); //  锁定用户余额
+  lockHedgeBalance(ammContext: AmmContext, accountId: string);
 
   writeJob(hedgeinfo: ISpotHedgeInfo);
 
@@ -146,8 +146,7 @@ interface IBalanceLock {
   lockedTime: number;
   lockedId: string;
 }
-// 回答
-// Hedge 完成
+
 enum EFlowStatus {
   AnswerOffer = "AnswerOffer",
   WaitHedge = "WaitHedge",

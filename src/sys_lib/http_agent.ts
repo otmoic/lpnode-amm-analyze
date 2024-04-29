@@ -1,6 +1,3 @@
-/**
- * 用于维持KeepLive的agent
- */
 const http = require("http");
 const https = require("https");
 const httpKeepAliveAgent = new http.Agent({
@@ -14,7 +11,7 @@ import * as _ from "lodash";
 
 const httpCreateFun = http.Agent.prototype.createSocket;
 if (typeof httpCreateFun === "function") {
-  http.Agent.prototype.createSocket = function() {
+  http.Agent.prototype.createSocket = function () {
     // eslint-disable-next-line prefer-rest-params
     // logger.debug(
     //   "HTTP CreateSocket",
@@ -30,7 +27,7 @@ if (typeof httpCreateFun === "function") {
 
 const httpsCreateFun = https.Agent.prototype.createSocket;
 if (typeof httpsCreateFun === "function") {
-  https.Agent.prototype.createSocket = function() {
+  https.Agent.prototype.createSocket = function () {
     // eslint-disable-next-line prefer-rest-params
     // logger.debug(
     //   "HTTPS CreateSocket",

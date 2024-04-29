@@ -1,5 +1,14 @@
 import { ISide } from "../interface/std_difi";
-
+interface IProfitOrderRecord {
+  amount: number;
+  symbol: string;
+  slippage: string;
+  fee: any;
+  clientOrderId: string;
+  status: number;
+  errMsg: string;
+  averagePrice: string; // average transaction price of the order
+}
 interface IProfitAssetsRecord {
   stdSymbol: string;
   side: string;
@@ -11,8 +20,11 @@ interface IProfitAssetsRecord {
   average: number;
   lostAmount: string;
   action: string;
+  isFee: boolean;
+  orderIdInfo: any;
 }
 interface IProfit {
+  quoteInfo?: any;
   raw_id: string;
   priceInfo: {
     coinPrice: string;
@@ -27,7 +39,7 @@ interface IProfit {
   };
   srcChainInfo: {
     received: {
-      // 起始链收入的资产
+      // assets from the originating chain's income
       amount: number;
       assets: string;
     }[];
@@ -56,12 +68,7 @@ interface IProfit {
       amount: string;
       amountNumber: number;
     }[];
-    orders: {
-      amount: number;
-      symbol: string;
-      slippage: string;
-      fee: any;
-    }[];
+    orders: IProfitOrderRecord[];
     assetsList: {
       assets: string;
       amount: number;
@@ -77,4 +84,4 @@ interface IProfit {
     }[];
   };
 }
-export { IProfitAssetsRecord, IProfit };
+export { IProfitAssetsRecord, IProfit, IProfitOrderRecord };

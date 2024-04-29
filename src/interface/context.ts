@@ -3,7 +3,7 @@ import { IBridgeTokenConfigItem } from "./interface";
 interface AmmContext {
   summary: string;
   bridgeItem: IBridgeTokenConfigItem;
-  step: number; // 当前处于第几步
+  step: number; // which step are we currently at
   systemInfo: {
     msmqName: string;
   };
@@ -41,49 +41,51 @@ interface AmmContext {
     };
   };
   swapInfo: {
-    inputAmount: string; //  前端输入的量
+    inputAmount: string; //  input quantity from the frontend
     inputAmountNumber: number;
-    systemSrcFee: number; // Lock 之后开始有值
-    systemDstFee: number; // Lock 之后开始有值
-    lpReceiveAmount: number; // Lp 实际收到的量
-    srcAmount: string; // 实际收到的量
+    systemSrcFee: number; // starts to have a value after Lock
+    systemDstFee: number; // starts to have a value after Lock
+    lpReceiveAmount: number; // actual amount received by Lp
+    srcAmount: string; // actual amount received
     srcAmountNumber: number;
-    dstAmount: string; // 实际转出的量
+    dstAmount: string; // actual amount transferred
     dstAmountNumber: number;
   };
   chainOptInfo: {
-    srcChainReceiveAmount: string; // A 链实际 tr in 的量
-    srcChainReceiveAmountNumber: number; // A 链实际 tr in 的量
-    dstChainPayAmount: string; // B 链实际付款金额
-    dstChainPayAmountNumber: number; // B链实际付款的number
+    srcChainReceiveAmount: string; // actual amount transferred in on Chain A
+    srcChainReceiveAmountNumber: number; // actual amount transferred in on Chain A
+    dstChainPayAmount: string; // B actual payment amount on the chain
+    dstChainPayAmountNumber: number; // actual payment number on Chain B
     dstChainPayNativeTokenAmount: string;
     dstChainPayNativeTokenAmountNumber: number;
   };
   quoteInfo: {
-    usd_price: string;
+    dst_usd_price: string;
     quote_hash: string;
+    hedge_fee_asset;
+    hedge_fee_asset_price: string;
     mode: string;
     origPrice: string;
     origTotalPrice: string;
     native_token_price: string;
-    native_token_orig_price: string; // 未扣除fee的原价
-    price: string; // 1 的报价
+    native_token_orig_price: string; // original price before deducting fees
+    price: string; // quotation for 1
     native_token_usdt_price: string;
-    src_usd_price: string; // 左侧币对的U价
-    capacity_num: number; // 左侧换币的最大数量
+    src_usd_price: string; // U price of the left currency pair
+    capacity_num: number; // maximum quantity for currency exchange on the left
   };
   lockInfo: {
     fee: string;
-    dstTokenPrice: string; // 目标币的U价格
-    price: string; // 原始报价 换币价格
-    srcTokenPrice: string; // 起始链 token usdt价格
-    nativeTokenPrice: string; // 原生币的买价，lock时需要产生
+    dstTokenPrice: string; // U price of the target currency
+    price: string; // original quotation, currency exchange price
+    srcTokenPrice: string; // USDT price of the starting chain token
+    nativeTokenPrice: string; // buying price of the native coin, generated during lock
     time: number;
   };
   askTime: number;
   systemOrder: {
     orderId: number;
-    balanceLockedId: string; // 锁的mongoid
+    balanceLockedId: string; // mongoid of the lock
     bridgeConfig: any;
     hedgePlan: any[];
     hedgeResult: any[];

@@ -6,30 +6,36 @@ import { SystemMath } from "../utils/system_math";
 import { ProfitHelper } from "./profit_helper";
 import * as _ from "lodash";
 
-import { IProfit, IProfitAssetsRecord } from "./profit_interface";
+import {
+  IProfit,
+  IProfitAssetsRecord,
+  IProfitOrderRecord,
+} from "./profit_interface";
 import { Mdb } from "./database/mdb";
 
 const profitHelper = new ProfitHelper();
 
 class Profit {
-  public process() {
-    this.scanContext();
+  public async process() {
+    await this.scanContext();
   }
 
   private async scanContext() {
     try {
+      const findOpt = {
+        flowStatus: {
+          $in: ["HedgeCompletion"],
+        },
+      };
       const ammContextList: AmmContext[] = await ammContextModule
-        .find({
-          flowStatus: {
-            $in: ["HedgeCompletion"],
-          },
-        })
+        .find(findOpt)
         .lean();
+      logger.debug(findOpt, "found several records?", ammContextList.length);
       if (!ammContextList || ammContextList.length === 0) {
-        logger.info(`没有找到合适的记录`);
+        logger.info(`did not find suitable records`);
         return;
       }
-      logger.info(`加载了${ammContextList.length}需要处理的记录`);
+      logger.info(`loaded ${ammContextList.length} records for processing`);
       await this.processList(ammContextList);
     } catch (e) {
       logger.error(e);
@@ -37,11 +43,11 @@ class Profit {
   }
   private async processList(ammContextList: AmmContext[]) {
     try {
-      ammContextList.forEach((ammContext) => {
-        this.processItem(ammContext);
-      });
+      for (let i = 0; i < ammContextList.length; i++) {
+        await this.processItem(ammContextList[i]);
+      }
     } catch (e) {
-      logger.error(`处理队列发生了错误`);
+      logger.error(`an error occurred in the processing queue`, e);
     }
   }
 
@@ -51,28 +57,39 @@ class Profit {
 
     const report = await this.createNewProfitReport(ammContext, raw_id);
     // this.process_setRawPrice(ammContext, report);
-    this.process_userInput(ammContext, report);
-    this.process_scrChainInfo(ammContext, report);
-    this.process_dstChainInfo(ammContext, report);
-    this.process_cexInfo(ammContext, report);
-    console.log(JSON.stringify(report));
-    console.dir(report, { depth: null });
-    Mdb.getInstance()
-      .getMongoDb("business")
-      .collection("amm_business")
-      .insertOne(report);
-    const appName = _.get(process.env, "APP_NAME", "");
-    Mdb.getInstance()
-      .getMongoDb("main")
-      .collection(`ammContext_${appName}`)
-      .updateOne(
-        {
-          _id: raw_id,
-        },
-        {
-          $set: { flowStatus: "HedgeAnalyzeCompletion" },
-        }
-      );
+    let targetStatus = "HedgeAnalyzeCompletion";
+    const appName = _.get(process.env, "APP_NAME", "").replace("-analyze", "");
+    try {
+      this.process_userInput(ammContext, report);
+      this.process_scrChainInfo(ammContext, report);
+      this.process_dstChainInfo(ammContext, report);
+      this.process_cexInfo(ammContext, report);
+      console.log(JSON.stringify(report));
+      // console.dir(report, { depth: null });
+      await Mdb.getInstance()
+        .getMongoDb("business")
+        .collection("amm_business")
+        .insertOne(report);
+    } catch (e) {
+      logger.error(e);
+      targetStatus = "HedgeAnalyzeError";
+      throw e;
+    } finally {
+      console.log(`processing has been completed...`, {
+        flowStatus: targetStatus,
+      });
+      await Mdb.getInstance()
+        .getMongoDb("main")
+        .collection(`ammContext_${appName}`)
+        .updateOne(
+          {
+            _id: raw_id,
+          },
+          {
+            $set: { flowStatus: targetStatus },
+          }
+        );
+    }
   }
 
   private async createNewProfitReport(
@@ -86,6 +103,8 @@ class Profit {
         coinOrigPrice: ammContext.quoteInfo.origPrice,
         nativeCoinPrice: ammContext.quoteInfo.native_token_price,
         nativeCoinOrigPrice: ammContext.quoteInfo.native_token_orig_price,
+        hedgeFeePrice: ammContext.quoteInfo.hedge_fee_asset_price,
+        hedgeFeeCoin: ammContext.quoteInfo.hedge_fee_asset,
       },
       userInput: {
         amount: 0,
@@ -165,6 +184,10 @@ class Profit {
 
   private process_cexInfo(ammContext: AmmContext, report: IProfit) {
     const assetsChangeList: IProfitAssetsRecord[] = [];
+    if (!_.isArray(ammContext.systemOrder.hedgeResult)) {
+      logger.warn(`hedge result it's not an array`);
+      return;
+    }
     ammContext.systemOrder.hedgeResult.forEach((orderRaw) => {
       console.dir(orderRaw);
       profitHelper.getAssetsRecord(orderRaw).forEach((assetsChangeItem) => {
@@ -175,18 +198,25 @@ class Profit {
     // hedgePlan
     report.cexInfo.hedgePlan = ammContext.systemOrder.hedgePlan;
     // orderRecord
-    const orderList: {
-      amount: number;
-      symbol: string;
-      slippage: string;
-      fee: any;
-    }[] = [];
+    const orderList: IProfitOrderRecord[] = [];
     ammContext.systemOrder.hedgeResult.forEach((orderRaw) => {
+      const orderErr = _.get(orderRaw, "error");
+      const status = _.get(orderRaw, "status");
+      if (status === 0 || orderErr !== "") {
+        // this is a wrong order
+        const errOrder = profitHelper.getErrorOrderStruct(orderRaw);
+        orderList.push(errOrder);
+        return;
+      }
       orderList.push({
-        amount: _.get(orderRaw, "result.stdSymbol"),
+        amount: _.get(orderRaw, "result.amount"),
+        averagePrice: _.get(orderRaw, "result.averagePrice", "0"),
         slippage: profitHelper.getSlippage(orderRaw),
-        fee: {},
+        fee: _.get(orderRaw, "result.fee"),
         symbol: _.get(orderRaw, "result.stdSymbol"),
+        clientOrderId: _.get(orderRaw, "result.clientOrderId"),
+        status: _.get(orderRaw, "status", 0),
+        errMsg: _.get(orderRaw, "error", "failed to obtain the error"),
       });
     });
     report.cexInfo.orders = orderList;
